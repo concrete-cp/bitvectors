@@ -5,17 +5,17 @@ object EmptyBitVector extends BitVector {
   def |(bv: BitVector): BitVector = bv
   def -(position: Int): BitVector = this
   def ^(bv: BitVector): BitVector = bv
-  def apply(position: Int): Boolean = false
+  def contains(position: Int): Boolean = false
   def cardinality: Int = 0
   def clearFrom(from: Int): BitVector = this
   def clearUntil(to: Int): BitVector = this
-  def filter(f: Int => Boolean): BitVector = this
+  override def filter(f: Int => Boolean): BitVector = this
   def filterBounds(f: Int => Boolean): BitVector = this
   def getWord(i: Int): Long = 0L
   def words: Array[Long] = Array()
   def intersects(bV: BitVector): Int = -1
   def intersects(bV: BitVector, position: Int): Boolean = false
-  def isEmpty: Boolean = true
+  override def isEmpty: Boolean = true
   def lastSetBit: Int = -1
   def nbWords: Int = 0
   def nextSetBit(start: Int): Int = -1

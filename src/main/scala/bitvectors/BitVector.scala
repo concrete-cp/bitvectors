@@ -1,32 +1,36 @@
 package bitvectors
 
-import java.util.Arrays
-import BitVector._
+import java.util
 
-final object BitVector {
-  private val ADDRESS_BITS_PER_WORD = 6
-  val WORD_SIZE: Int = 1 << ADDRESS_BITS_PER_WORD
+import bitvectors.BitVector._
+
+import scala.collection.SortedSetLike
+import scala.collection.immutable.SortedSet
+
+object BitVector {
+
   val MASK: Long = 0xFFFFFFFFFFFFFFFFL
+  private val ADDRESS_BITS_PER_WORD: Int = 6
+  val WORD_SIZE: Int = 1 << ADDRESS_BITS_PER_WORD
 
-  def empty: BitVector = EmptyBitVector
 
   def filled(size: Int): BitVector = empty.set(0, size)
 
+  def empty: BitVector = EmptyBitVector
+
   def word(bit: Int): Int = bit >> ADDRESS_BITS_PER_WORD
 
-  def apply(v: Traversable[Int]): BitVector = empty ++ v
-
-  def fromIntervals(v: Traversable[(Int, Int)]): BitVector = {
-    v.foldLeft(empty) {
-      case (bv, (l, u)) =>
-        bv.set(l, u + 1)
+  def apply(v: Traversable[Int]): BitVector = {
+    val bvb = new BitVectorBuilder()
+    for (b <- v) {
+      bvb += b
     }
+    bvb.result()
   }
 
   def apply(words: Array[Long]): BitVector = apply(words, words.length)
 
   def apply(words: Array[Long], until: Int): BitVector = {
-    assert(until >= 1)
     var trimTo = until
 
     while (trimTo > 0 && words(trimTo - 1) == 0L) {
@@ -37,30 +41,22 @@ final object BitVector {
       case 0 => EmptyBitVector
       case 1 => new SmallBitVector(words(0))
       case _ =>
-        val nw = if (trimTo == words.length) words else Arrays.copyOf(words, trimTo)
+        val nw = if (trimTo == words.length) words else util.Arrays.copyOf(words, trimTo)
         LargeBitVector(nw)
     }
 
   }
 }
 
-trait BitVector extends Any {
+trait BitVector extends SortedSet[Int] with SortedSetLike[Int, BitVector] {
 
-  def iterator: Iterator[Int] = new Iterator[Int] {
-    var current = nextSetBit(0)
-    def hasNext = current >= 0
-    def next() = {
-      val c = current
-      current = nextSetBit(current + 1)
-      c
-    }
-  }
+  //  def traversable: Traversable[Int] = new Traversable[Int] {
+  //    def foreach[U](f: Int => U): Unit = BitVector.this.foreach(f)
+  //  }
 
-  def traversable: Traversable[Int] = new Traversable[Int] {
-    def foreach[U](f: Int => U): Unit = BitVector.this.foreach(f)
-  }
+  override def empty = BitVector.empty
 
-  def foreach[U](f: Int => U): Unit = {
+  override def foreach[U](f: Int => U): Unit = {
     var i = nextSetBit(0)
     while (i >= 0) {
       f(i)
@@ -68,52 +64,16 @@ trait BitVector extends Any {
     }
   }
 
-  override def toString(): String =
-    this.getClass().getSimpleName() + iterator.mkString("{", ", ", "}")
-
   def set(from: Int, until: Int): BitVector = {
-    if (from >= until) {
-      this
+    val bvb = new BitVectorBuilder(words.clone, nbWords)
+    bvb.set(from, until)
+
+    if (bvb.change) {
+      bvb.result()
     } else {
-      val startWordIndex = word(from)
-      val maskFrom = MASK << from
-      val lastWordIndex = word(until - 1)
-      val maskTo = MASK >>> -until
-
-      val newWords = Arrays.copyOf(this.words, math.max(nbWords, lastWordIndex + 1)) //getWords.padTo(lastWordIndex + 1, 0L)
-      val sw = newWords(startWordIndex)
-
-      var changed = false
-      if (startWordIndex == lastWordIndex) {
-        newWords(startWordIndex) |= (maskFrom & maskTo)
-      } else {
-        newWords(startWordIndex) |= maskFrom
-
-        val lw = newWords(lastWordIndex)
-        newWords(lastWordIndex) |= maskTo
-
-        changed |= (lw != newWords(lastWordIndex))
-
-        for (i <- startWordIndex + 1 until lastWordIndex) {
-          if (newWords(i) != MASK) {
-            newWords(i) = MASK
-            changed = true
-          }
-        }
-
-      }
-      changed |= (sw != newWords(startWordIndex))
-
-      if (changed) {
-        if (newWords.length == 1) {
-          new SmallBitVector(newWords.head)
-        } else {
-          LargeBitVector(newWords)
-        }
-      } else {
-        this
-      }
+      this
     }
+
   }
 
   def words: Array[Long]
@@ -133,28 +93,14 @@ trait BitVector extends Any {
   }
 
   def ++(p: Traversable[Int]): BitVector = {
-    var words = this.words
-    var change = false
+    val bvb = new BitVectorBuilder(words.clone, nbWords)
 
     for (i <- p) {
-      val wordPos = word(i)
-      if (wordPos >= words.length) {
-        words = Arrays.copyOf(words, wordPos + 1)
-      }
-      val oldWord = words(wordPos)
-      val newWord = oldWord | (1L << i)
-      if (oldWord != newWord) {
-        change = true
-        words(wordPos) = newWord
-      }
+      bvb += i
     }
 
-    if (change) {
-      words.length match {
-        case 0 => EmptyBitVector
-        case 1 => new SmallBitVector(words(0))
-        case _ => LargeBitVector(words)
-      }
+    if (bvb.change) {
+      bvb.result()
     } else {
       this
     }
@@ -162,7 +108,7 @@ trait BitVector extends Any {
 
   def --(p: Traversable[Int]): BitVector = p.foldLeft(this)(_ - _)
 
-  def apply(position: Int): Boolean
+  // def apply(position: Int): Boolean
 
   def nextSetBit(start: Int): Int
 
@@ -198,10 +144,11 @@ trait BitVector extends Any {
 
   def setWordShrink(pos: Int, word: Long): BitVector
 
-  def filter(f: Int => Boolean): BitVector
+  override def filter(f: Int => Boolean): BitVector
+
   def filterBounds(f: Int => Boolean): BitVector
 
-  def nextOrLoop(i: Int) = {
+  def nextOrLoop(i: Int): Int = {
     val n = nextSetBit(i)
     if (n < 0) {
       nextSetBit(0)
@@ -266,5 +213,29 @@ trait BitVector extends Any {
       }
     }
 
+  }
+
+  override def toString: String =
+    this.getClass.getSimpleName + iterator.mkString("{", ", ", "}")
+
+  def iterator: Iterator[Int] = keysIteratorFrom(0)
+
+  def keysIteratorFrom(start: Int): Iterator[Int] = new Iterator[Int] {
+    private var current = nextSetBit(start)
+
+    def hasNext: Boolean = current >= 0
+
+    def next(): Int = {
+      val c = current
+      current = nextSetBit(current + 1)
+      c
+    }
+  }
+
+  implicit def ordering: Ordering[Int] = Ordering.Int
+
+  def rangeImpl(from: Option[Int], until: Option[Int]): BitVector = {
+    val low = from.map { lb => clearUntil(lb) }.getOrElse(this)
+    until.map { ub => low.clearFrom(ub) }.getOrElse(low)
   }
 }

@@ -1,23 +1,17 @@
-package cspom.util;
+package bitvectors
 
-import org.scalatest.Matchers
-import org.scalatest.FlatSpec
-import org.scalatest.Inspectors
-import org.scalatest.prop.PropertyChecks
 import org.scalacheck.Gen
-import bitvectors.LargeBitVector
-import bitvectors.EmptyBitVector
-import bitvectors.BitVector
-import bitvectors.SmallBitVector
+import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.prop.PropertyChecks
 
 final class LargeBitVectorTest extends FlatSpec with Matchers with PropertyChecks {
 
   "LargeBitVectors" should "be filled" in {
     val bitVector = BitVector.filled(125)
-    assert(bitVector(64));
-    assert(bitVector(65));
-    assert(bitVector(124));
-    assert(!bitVector(125));
+    assert(bitVector(64))
+    assert(bitVector(65))
+    assert(bitVector(124))
+    assert(!bitVector(125))
     bitVector.nextSetBit(0) shouldBe 0
 
     BitVector.empty.nextSetBit(0) shouldBe -1
@@ -63,9 +57,9 @@ final class LargeBitVectorTest extends FlatSpec with Matchers with PropertyCheck
 
   it should "get bits" in {
     val bitVector = BitVector.empty + 46
-    assert(!bitVector(0));
-    assert(!bitVector(45));
-    assert(bitVector(46));
+    assert(!bitVector(0))
+    assert(!bitVector(45))
+    assert(bitVector(46))
   }
 
   it should "compute next bit" in {
@@ -76,6 +70,11 @@ final class LargeBitVectorTest extends FlatSpec with Matchers with PropertyCheck
     bitVector.nextSetBit(63) shouldBe 100
     bitVector.nextSetBit(64) shouldBe 100
     bitVector.nextSetBit(101) shouldBe -1
+  }
+
+  it should "compute next bit 65" in {
+    val bitVector = BitVector.empty + 65
+    bitVector.nextSetBit(2) shouldBe 65
   }
   //
   //  it should "compute prev cleared bit" in {
@@ -137,7 +136,7 @@ final class LargeBitVectorTest extends FlatSpec with Matchers with PropertyCheck
 
   it should "correctly clear parts from bit" in {
 
-    BitVector(Set(27860, 65929, 41689, 94054, 57759, 35436, 56080, 80650, 70344, 24299, 28787)).clearFrom(41728).traversable should
+    BitVector(Set(27860, 65929, 41689, 94054, 57759, 35436, 56080, 80650, 70344, 24299, 28787)).clearFrom(41728) should
       contain theSameElementsAs Set(27860, 41689, 35436, 24299, 28787)
 
     val bitVector = BitVector.empty + 46 + 49 + 100
@@ -238,7 +237,7 @@ final class LargeBitVectorTest extends FlatSpec with Matchers with PropertyCheck
   }
   it should "filter" in {
     val bv = BitVector.empty + 127
-    val filt = bv.filter(_ % 2 == 1)
+    val filt: BitVector = bv.filter(_ % 2 == 1)
 
     val bitVector = BitVector.filled(128)
     val filtered = bitVector.filter(_ % 2 == 1)
@@ -258,7 +257,9 @@ final class LargeBitVectorTest extends FlatSpec with Matchers with PropertyCheck
     bv += 38
     bv += 26
 
-    for (e <- Seq(203, 202, 134, 104, 86, 50, 38, 26)) { assert(bv(e)) }
+    for (e <- Seq(203, 202, 134, 104, 86, 50, 38, 26)) {
+      assert(bv(e))
+    }
 
     bv.iterator.toSeq should contain theSameElementsAs Seq(203, 202, 134, 104, 86, 50, 38, 26)
     bv.lastSetBit shouldBe 203
@@ -275,9 +276,13 @@ final class LargeBitVectorTest extends FlatSpec with Matchers with PropertyCheck
     val gen: Gen[Set[Int]] = Gen.buildableOf[Set[Int], Int](Gen.choose(0, 100000))
 
     forAll(gen, Gen.choose(0, 100000)) { (ps, c) =>
-      BitVector(ps).traversable should contain theSameElementsAs ps
-      BitVector(ps).clearFrom(c).traversable should contain theSameElementsAs ps.filter(_ < c)
+      BitVector(ps) should contain theSameElementsAs ps
+      BitVector(ps).clearFrom(c) should contain theSameElementsAs ps.filter(_ < c)
     }
+  }
+
+  it should "behave as sets, basic case" in {
+    BitVector(Seq(0)) should contain theSameElementsAs Seq(0)
   }
 
   it should "shift" in {
@@ -305,6 +310,6 @@ final class LargeBitVectorTest extends FlatSpec with Matchers with PropertyCheck
   }
 
   it should "shift and clear" in {
-    BitVector(Seq(1, 10, 30, 60, 100)).shift(-20).traversable.toStream should contain theSameElementsAs Seq(10, 40, 80)
+    BitVector(Seq(1, 10, 30, 60, 100)).shift(-20) should contain theSameElementsAs Seq(10, 40, 80)
   }
 }

@@ -2,10 +2,10 @@ package bitvectors
 
 import BitVector._
 
-final class SmallBitVector private[bitvectors] (val word: Long) extends AnyVal with BitVector {
+final class SmallBitVector private[bitvectors] (val word: Long) extends BitVector {
   def -(position: Int): BitVector = setWord0(word & ~(1L << position))
 
-  def apply(position: Int): Boolean = {
+  def contains(position: Int): Boolean = {
     position < WORD_SIZE && (word & (1L << position)) != 0L;
   }
 
@@ -98,7 +98,7 @@ final class SmallBitVector private[bitvectors] (val word: Long) extends AnyVal w
     bv.setWordExpand(0, newWord)
   }
 
-  def isEmpty: Boolean = {
+  override def isEmpty: Boolean = {
     assert(word != 0L)
     false
   }
@@ -142,7 +142,7 @@ final class SmallBitVector private[bitvectors] (val word: Long) extends AnyVal w
     setWord0(word)
   }
 
-  def filter(f: Int => Boolean): BitVector = {
+  override def filter(f: Int => Boolean): BitVector = {
     var newWord = 0L
     var i = nextSetBit(0)
     while (i >= 0) {

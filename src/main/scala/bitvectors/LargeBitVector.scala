@@ -1,18 +1,19 @@
 package bitvectors
 
-import java.util.Arrays
-import BitVector._
+import java.util
+
+import bitvectors.BitVector._
 
 object LargeBitVector {
 
-  def apply(words: Array[Long]) = {
-    assert(words.length > 1, s"${Arrays.toString(words)} should use SmallBitVector")
-    assert(words.last != 0L, s"${Arrays.toString(words)} should be shrinked")
+  def apply(words: Array[Long]): LargeBitVector = {
+    assert(words.length > 1, s"${util.Arrays.toString(words)} should use SmallBitVector")
+    assert(words.last != 0L, s"${util.Arrays.toString(words)} should be shrinked")
     new LargeBitVector(words)
   }
 }
 
-class LargeBitVector private[bitvectors] (val words: Array[Long]) extends AnyVal with BitVector {
+class LargeBitVector private[bitvectors](val words: Array[Long]) extends BitVector {
 
   //  assert(words.length > 1)
   //  assert(words(words.length - 1) != 0)
@@ -27,36 +28,36 @@ class LargeBitVector private[bitvectors] (val words: Array[Long]) extends AnyVal
     }
   }
 
-  def apply(position: Int): Boolean = {
+  def setWordShrink(pos: Int, word: Long): BitVector = {
+    if (word == 0L && pos >= nbWords - 1) {
+      var trimTo = pos - 1
+      while (trimTo >= 0 && words(trimTo) == 0L) {
+        trimTo -= 1
+      }
+      val newWords = util.Arrays.copyOf(words, trimTo + 1)
+      newWords.length match {
+        case 0 => EmptyBitVector
+        case 1 => new SmallBitVector(newWords.head)
+        case _ => LargeBitVector(newWords)
+      }
+    } else {
+      val newWords = util.Arrays.copyOf(words, words.length) //, x$2)words.padTo(pos + 1, 0L)
+      newWords(pos) = word
+      LargeBitVector(newWords)
+    }
+  }
+
+  def contains(position: Int): Boolean = {
     val wordPos = word(position)
     wordPos < nbWords && (words(wordPos) & (1L << position)) != 0L
   }
 
-  def nextSetBit(start: Int): Int = {
-    var position = word(start)
-
-    if (position >= nbWords) {
-      -1
-    } else {
-      var ctz = java.lang.Long.numberOfTrailingZeros(words(position) & (MASK << start))
-
-      while (ctz >= WORD_SIZE) {
-        position += 1
-        if (position >= nbWords) {
-          return -1
-        }
-        ctz = java.lang.Long.numberOfTrailingZeros(words(position))
-      }
-      position * WORD_SIZE + ctz
-    }
-  }
-
-  def prevSetBit(start: Int): Int = {
+  def prevClearBit(start: Int): Int = {
     val wordsInUse = words.length
     val startWord = BitVector.word(start)
-    var position: Int = math.min(wordsInUse - 1, startWord)
+    var position = math.min(wordsInUse - 1, startWord)
 
-    var word = words(position);
+    var word = ~words(position)
     if (position == startWord) {
       word &= ~(MASK << start)
     }
@@ -66,30 +67,9 @@ class LargeBitVector private[bitvectors] (val words: Array[Long]) extends AnyVal
       if (position < 0) {
         return -1
       }
-      word = words(position)
-    }
-
-    (1 + position) * WORD_SIZE - java.lang.Long.numberOfLeadingZeros(word) - 1
-  }
-
-  def prevClearBit(start: Int): Int = {
-    val wordsInUse = words.length;
-    val startWord = BitVector.word(start)
-    var position = math.min(wordsInUse - 1, startWord);
-
-    var word = ~words(position);
-    if (position == startWord) {
-      word &= ~(MASK << start);
-    }
-
-    while (word == 0) {
-      position -= 1
-      if (position < 0) {
-        return -1;
-      }
       word = ~words(position)
     }
-    (1 + position) * WORD_SIZE - java.lang.Long.numberOfLeadingZeros(word) - 1;
+    (1 + position) * WORD_SIZE - java.lang.Long.numberOfLeadingZeros(word) - 1
   }
 
   def ^(bv: BitVector): BitVector = {
@@ -115,16 +95,6 @@ class LargeBitVector private[bitvectors] (val words: Array[Long]) extends AnyVal
     BitVector(newWords)
   }
 
-  private def union(long: Array[Long], short: Array[Long]): Array[Long] = {
-    val newWords = long.clone
-    var i = short.length - 1
-    while (i >= 0) {
-      newWords(i) |= short(i)
-      i -= 1
-    }
-    newWords
-  }
-
   def |(bv: BitVector): BitVector = {
     val newWords =
       if (nbWords > bv.nbWords) {
@@ -133,6 +103,16 @@ class LargeBitVector private[bitvectors] (val words: Array[Long]) extends AnyVal
         union(bv.words, words)
       }
     LargeBitVector(newWords)
+  }
+
+  private def union(long: Array[Long], short: Array[Long]): Array[Long] = {
+    val newWords = long.clone
+    var i = short.length - 1
+    while (i >= 0) {
+      newWords(i) |= short(i)
+      i -= 1
+    }
+    newWords
   }
 
   def clearFrom(from: Int): BitVector = {
@@ -159,7 +139,7 @@ class LargeBitVector private[bitvectors] (val words: Array[Long]) extends AnyVal
           BitVector(words, startWordIndex)
         } else if (startWordIndex + 1 < nbWords || lastWord != words(startWordIndex)) {
 
-          val newWords = Arrays.copyOf(words, startWordIndex + 1)
+          val newWords = util.Arrays.copyOf(words, startWordIndex + 1)
           newWords(startWordIndex) = lastWord
           LargeBitVector(newWords)
 
@@ -211,6 +191,10 @@ class LargeBitVector private[bitvectors] (val words: Array[Long]) extends AnyVal
     }
   }
 
+  def intersects(bv: BitVector, position: Int): Boolean = {
+    (bv.getWord(position) & getWord(position)) != 0;
+  }
+
   //  override def equals(o: Any): Boolean = o match {
   //    case bv: BitVector =>
   //      for (i <- 0 until nbWords) {
@@ -231,8 +215,11 @@ class LargeBitVector private[bitvectors] (val words: Array[Long]) extends AnyVal
   //    result.toInt;
   //  }
 
-  def intersects(bv: BitVector, position: Int): Boolean = {
-    (bv.getWord(position) & getWord(position)) != 0;
+  def getWord(i: Int): Long = {
+    if (i >= words.length)
+      0L;
+    else
+      words(i);
   }
 
   def intersects(bv: BitVector): Int = {
@@ -248,9 +235,7 @@ class LargeBitVector private[bitvectors] (val words: Array[Long]) extends AnyVal
     -1;
   }
 
-  def nbWords: Int = words.length
-
-  def isEmpty: Boolean = {
+  override def isEmpty: Boolean = {
     assert(words.last != 0L)
     false
   }
@@ -266,47 +251,21 @@ class LargeBitVector private[bitvectors] (val words: Array[Long]) extends AnyVal
   }
 
   def subsetOf(bv: BitVector): Boolean = {
-    for (i <- 0 until words.length) {
+    for (i <- words.indices) {
       if ((words(i) & ~bv.getWord(i)) != 0L) {
-        return false;
+        return false
       }
     }
-    true;
-  }
-
-  def getWord(i: Int): Long = {
-    if (i >= words.length)
-      0L;
-    else
-      words(i);
+    true
   }
 
   def setWordExpand(pos: Int, word: Long): BitVector = {
-    val newWords = Arrays.copyOf(words, math.max(words.length, pos + 1)) //, x$2)words.padTo(pos + 1, 0L)
-    newWords(pos) = word;
+    val newWords = util.Arrays.copyOf(words, math.max(words.length, pos + 1)) //, x$2)words.padTo(pos + 1, 0L)
+    newWords(pos) = word
     LargeBitVector(newWords)
   }
 
-  def setWordShrink(pos: Int, word: Long): BitVector = {
-    if (word == 0L && pos >= nbWords - 1) {
-      var trimTo = pos - 1
-      while (trimTo >= 0 && words(trimTo) == 0L) {
-        trimTo -= 1
-      }
-      val newWords = Arrays.copyOf(words, trimTo + 1)
-      newWords.length match {
-        case 0 => EmptyBitVector
-        case 1 => new SmallBitVector(newWords.head)
-        case _ => LargeBitVector(newWords)
-      }
-    } else {
-      val newWords = Arrays.copyOf(words, words.length) //, x$2)words.padTo(pos + 1, 0L)
-      newWords(pos) = word;
-      LargeBitVector(newWords)
-    }
-  }
-
-  def filter(f: Int => Boolean): BitVector = {
+  override def filter(f: Int => Boolean): BitVector = {
     var words: Array[Long] = null //new Array[Long](nbWords)
     var i = nextSetBit(0)
     while (i >= 0) {
@@ -339,16 +298,61 @@ class LargeBitVector private[bitvectors] (val words: Array[Long]) extends AnyVal
         i = prevSetBit(i)
       }
     }
-    if (Arrays.equals(words, this.words)) {
+    if (util.Arrays.equals(words, this.words)) {
       this
     } else {
       BitVector(words)
     }
   }
 
+  def nextSetBit(start: Int): Int = {
+    var u = word(start)
+
+    if (u >= nbWords) {
+      -1
+    } else {
+      var word = words(u) & (MASK << start)
+
+      while (true) {
+        if (word != 0) {
+          return (u * WORD_SIZE) + java.lang.Long.numberOfTrailingZeros(word)
+        }
+        u += 1
+        if (u == nbWords) {
+          return -1
+        }
+        word = words(u)
+      }
+      throw new IllegalStateException()
+    }
+  }
+
+  def nbWords: Int = words.length
+
+  def prevSetBit(start: Int): Int = {
+    val wordsInUse = words.length
+    val startWord = BitVector.word(start)
+    var position: Int = math.min(wordsInUse - 1, startWord)
+
+    var word = words(position)
+    if (position == startWord) {
+      word &= ~(MASK << start)
+    }
+
+    while (word == 0) {
+      position -= 1
+      if (position < 0) {
+        return -1
+      }
+      word = words(position)
+    }
+
+    (1 + position) * WORD_SIZE - java.lang.Long.numberOfLeadingZeros(word) - 1
+  }
+
   def lastSetBit: Int = {
     val length = words.length
     val word = words(length - 1)
-    return length * WORD_SIZE - java.lang.Long.numberOfLeadingZeros(word) - 1;
+    length * WORD_SIZE - java.lang.Long.numberOfLeadingZeros(word) - 1
   }
 }

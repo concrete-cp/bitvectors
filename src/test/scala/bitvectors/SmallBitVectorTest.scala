@@ -1,20 +1,15 @@
-package cspom.util;
+package bitvectors
 
-import org.scalatest.Matchers
-import org.scalatest.FlatSpec
+import org.scalatest.{FlatSpec, Matchers}
 import org.scalatest.prop.PropertyChecks
-import scala.collection.BitSet
-import bitvectors.LargeBitVector
-import bitvectors.BitVector
-import bitvectors.SmallBitVector
 
 class SmallBitVectorTest extends FlatSpec with Matchers with PropertyChecks {
 
   "SmallBitVector" should "be filled" in {
     val bitVector = BitVector.filled(50)
-    assert(bitVector(49));
-    assert(bitVector(32));
-    assert(!bitVector(50));
+    assert(bitVector(49))
+    assert(bitVector(32))
+    assert(!bitVector(50))
     bitVector.cardinality shouldBe 50
 
     BitVector.empty.nextSetBit(0) shouldBe -1
