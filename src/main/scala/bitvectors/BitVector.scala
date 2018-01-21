@@ -54,7 +54,7 @@ trait BitVector extends SortedSet[Int] with SortedSetLike[Int, BitVector] {
   //    def foreach[U](f: Int => U): Unit = BitVector.this.foreach(f)
   //  }
 
-  override def empty = BitVector.empty
+  override def empty: BitVector = BitVector.empty
 
   override def foreach[U](f: Int => U): Unit = {
     var i = nextSetBit(0)
