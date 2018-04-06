@@ -67,13 +67,6 @@ final class SmallBitVector private[bitvectors] (val word: Long) extends BitVecto
     }
   }
 
-  //  override def equals(o: Any) = o match {
-  //    case bv: BitVector => bv.getWord(0) == word && bv.nextSetBit(WORD_SIZE) == -1
-  //    case _ => false
-  //  }
-  //
-  //  override def hashCode = word.toInt
-
   def intersects(bv: BitVector, position: Int): Boolean = {
     (bv.getWord(0) & word) != 0;
   }
@@ -181,9 +174,4 @@ final class SmallBitVector private[bitvectors] (val word: Long) extends BitVecto
       new SmallBitVector(newWord)
     }
   }
-
-  //  override def equals(o: Any) = o match {
-  //    case bv: SmallBitVector => bv.word == word
-  //    case _                  => false
-  //  }
 }

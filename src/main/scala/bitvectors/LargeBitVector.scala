@@ -195,44 +195,25 @@ class LargeBitVector private[bitvectors](val words: Array[Long]) extends BitVect
     (bv.getWord(position) & getWord(position)) != 0;
   }
 
-  //  override def equals(o: Any): Boolean = o match {
-  //    case bv: BitVector =>
-  //      for (i <- 0 until nbWords) {
-  //        if (getWord(i) != bv.getWord(i)) {
-  //          return false;
-  //        }
-  //      }
-  //      true;
-  //    case _ => false
-  //  }
-  //
-  //  override def hashCode(): Int = {
-  //    var result = 721L;
-  //    for (w <- words) {
-  //      result = 31 * result + w;
-  //    }
-  //
-  //    result.toInt;
-  //  }
 
   def getWord(i: Int): Long = {
     if (i >= words.length)
-      0L;
+      0L
     else
-      words(i);
+      words(i)
   }
 
   def intersects(bv: BitVector): Int = {
     val bvw = bv.words
-    var i = math.min(bvw.length, words.length) - 1
-    while (i >= 0) {
-      if ((words(i) & bvw(i)) != 0) {
-        return i;
-      }
-      i -= 1
-    }
+    findIntersection(math.min(bvw.length, words.length) - 1)
 
-    -1;
+    def findIntersection(i: Int): Int = {
+      if (i < 0 || (words(i) & bvw(i)) != 0) {
+        i
+      } else {
+        findIntersection(i - 1)
+      }
+    }
   }
 
   override def isEmpty: Boolean = {
@@ -241,13 +222,13 @@ class LargeBitVector private[bitvectors](val words: Array[Long]) extends BitVect
   }
 
   def cardinality: Int = {
-    var cardinality = 0;
+    var cardinality = 0
     var i = words.length - 1
     while (i >= 0) {
-      cardinality += java.lang.Long.bitCount(words(i));
+      cardinality += java.lang.Long.bitCount(words(i))
       i -= 1
     }
-    cardinality;
+    cardinality
   }
 
   def subsetOf(bv: BitVector): Boolean = {

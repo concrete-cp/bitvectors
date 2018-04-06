@@ -21,11 +21,16 @@ object BitVector {
   def word(bit: Int): Int = bit >> ADDRESS_BITS_PER_WORD
 
   def apply(v: Traversable[Int]): BitVector = {
-    val bvb = new BitVectorBuilder()
+    val bvb = new util.BitSet()
     for (b <- v) {
-      bvb += b
+      bvb.set(b)
     }
-    bvb.result()
+    BitVector(bvb)
+  }
+
+
+  def apply(bitSet: util.BitSet): BitVector = {
+    apply(bitSet.toLongArray)
   }
 
   def apply(words: Array[Long]): BitVector = apply(words, words.length)
@@ -65,16 +70,16 @@ trait BitVector extends SortedSet[Int] with SortedSetLike[Int, BitVector] {
   }
 
   def set(from: Int, until: Int): BitVector = {
-    val bvb = new BitVectorBuilder(words.clone, nbWords)
+    val bvb = util.BitSet.valueOf(words)
     bvb.set(from, until)
 
-    if (bvb.change) {
-      bvb.result()
+    if (bvb.cardinality > cardinality) {
+      BitVector(bvb)
     } else {
       this
     }
-
   }
+
 
   def words: Array[Long]
 
@@ -93,14 +98,14 @@ trait BitVector extends SortedSet[Int] with SortedSetLike[Int, BitVector] {
   }
 
   def ++(p: Traversable[Int]): BitVector = {
-    val bvb = new BitVectorBuilder(words.clone, nbWords)
+    val bvb = util.BitSet.valueOf(words)
 
     for (i <- p) {
-      bvb += i
+      bvb.set(i)
     }
 
-    if (bvb.change) {
-      bvb.result()
+    if (bvb.cardinality != cardinality) {
+      BitVector(bvb)
     } else {
       this
     }
