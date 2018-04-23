@@ -205,7 +205,6 @@ class LargeBitVector private[bitvectors](val words: Array[Long]) extends BitVect
 
   def intersects(bv: BitVector): Int = {
     val bvw = bv.words
-    findIntersection(math.min(bvw.length, words.length) - 1)
 
     def findIntersection(i: Int): Int = {
       if (i < 0 || (words(i) & bvw(i)) != 0) {
@@ -214,6 +213,8 @@ class LargeBitVector private[bitvectors](val words: Array[Long]) extends BitVect
         findIntersection(i - 1)
       }
     }
+
+    findIntersection(math.min(bvw.length, words.length) - 1)
   }
 
   override def isEmpty: Boolean = {

@@ -7,8 +7,8 @@ version := "2.1"
 scalaVersion := "2.12.4"
 
 libraryDependencies ++= Seq(
-	"org.scalatest" %% "scalatest" % "3.0.4" % "test",
-	"org.scalacheck" %% "scalacheck" % "1.13.5" % "test"
+	"org.scalatest" %% "scalatest" % "3.0.5" % "test",
+	"org.scalacheck" %% "scalacheck" % "1.14.0" % "test"
 	)
 
 scalacOptions ++= Seq(
@@ -35,6 +35,8 @@ publishTo :=  {
 publishArtifact in Test := false
 
 testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-u", s"${(target in Test).value / "test-reports"}")
+
+testOptions in Test += Tests.Argument("-oDF")
 
 // EclipseKeys.withBundledScalaContainers := false
 licenses := Seq("LGPL 3.0" -> url("https://www.gnu.org/licenses/lgpl-3.0.txt"))
