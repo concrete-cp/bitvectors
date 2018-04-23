@@ -3,7 +3,7 @@ scala:
   - 2.12.4
 
 jdk:
-  - oraclejdk10
+  - oraclejdk9
 
 script:
   - sbt ++$TRAVIS_SCALA_VERSION coverage test coverageReport coverageAggregate codacyCoverage
