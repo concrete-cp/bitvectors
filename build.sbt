@@ -1,6 +1,6 @@
 name := "bitvectors"
 
-organization := "fr.univ-valenciennes"
+organization := "com.github.concrete-cp"
 
 version := "3.0"
 
