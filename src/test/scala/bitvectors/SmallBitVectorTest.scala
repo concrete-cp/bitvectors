@@ -1,9 +1,9 @@
 package bitvectors
 
 import org.scalatest.{FlatSpec, Matchers}
-import org.scalatest.prop.PropertyChecks
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
-class SmallBitVectorTest extends FlatSpec with Matchers with PropertyChecks {
+class SmallBitVectorTest extends FlatSpec with Matchers with ScalaCheckPropertyChecks {
 
   "SmallBitVector" should "be filled" in {
     val bitVector = BitVector.filled(50)
@@ -28,9 +28,9 @@ class SmallBitVectorTest extends FlatSpec with Matchers with PropertyChecks {
 
   it should "get bits" in {
     val bitVector = BitVector.empty + 46
-    assert(!bitVector(0));
-    assert(!bitVector(45));
-    assert(bitVector(46));
+    assert(!bitVector(0))
+    assert(!bitVector(45))
+    assert(bitVector(46))
   }
 
   it should "compute next bits" in {

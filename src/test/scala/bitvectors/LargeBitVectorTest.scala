@@ -2,9 +2,9 @@ package bitvectors
 
 import org.scalacheck.Gen
 import org.scalatest.{FlatSpec, Matchers}
-import org.scalatest.prop.PropertyChecks
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
-final class LargeBitVectorTest extends FlatSpec with Matchers with PropertyChecks {
+final class LargeBitVectorTest extends FlatSpec with Matchers with ScalaCheckPropertyChecks {
 
   "LargeBitVectors" should "be filled" in {
     val bitVector = BitVector.filled(125)
@@ -305,7 +305,7 @@ final class LargeBitVectorTest extends FlatSpec with Matchers with PropertyCheck
 
   it should "also shift" in {
     val bv = BitVector(Seq(146, 160, 174))
-    bv.shift(-146).iterator.toStream should contain theSameElementsAs Seq(0, 14, 28)
+    bv.shift(-146).iterator.toSeq should contain theSameElementsAs Seq(0, 14, 28)
 
   }
 

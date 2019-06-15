@@ -2,12 +2,12 @@ name := "bitvectors"
 
 organization := "fr.univ-valenciennes"
 
-version := "2.1"
+version := "3.0"
 
-scalaVersion := "2.12.4"
+scalaVersion := "2.13.0"
 
 libraryDependencies ++= Seq(
-	"org.scalatest" %% "scalatest" % "3.0.5" % "test",
+	"org.scalatest" %% "scalatest" % "3.0.8" % "test",
 	"org.scalacheck" %% "scalacheck" % "1.14.0" % "test"
 	)
 
@@ -15,7 +15,8 @@ scalacOptions ++= Seq(
    "-Xdisable-assertions"
   , "-deprecation" 
 //	"-unchecked" 
-    , "-Xlint" 
+   , "-Xlint"
+   , "-target:jvm-1.8"
 //	
 //	"-feature"
 //	"-Yinline-warnings"

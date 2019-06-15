@@ -3,7 +3,7 @@ package bitvectors
 import BitVector._
 
 final class SmallBitVector private[bitvectors] (val word: Long) extends BitVector {
-  def -(position: Int): BitVector = setWord0(word & ~(1L << position))
+  def excl(position: Int): BitVector = setWord0(word & ~(1L << position))
 
   def contains(position: Int): Boolean = {
     position < WORD_SIZE && (word & (1L << position)) != 0L;

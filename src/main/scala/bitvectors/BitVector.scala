@@ -4,13 +4,13 @@ import java.util
 
 import bitvectors.BitVector._
 
-import scala.collection.SortedSetLike
-import scala.collection.immutable.SortedSet
+import scala.collection.immutable.{AbstractSet, SortedSet, SortedSetOps, StrictOptimizedSortedSetOps}
+import scala.collection.mutable
 
 object BitVector {
 
-  val MASK: Long = 0xFFFFFFFFFFFFFFFFL
   private val ADDRESS_BITS_PER_WORD: Int = 6
+  val MASK: Long = 0xFFFFFFFFFFFFFFFFL
   val WORD_SIZE: Int = 1 << ADDRESS_BITS_PER_WORD
 
 
@@ -20,7 +20,7 @@ object BitVector {
 
   def word(bit: Int): Int = bit >> ADDRESS_BITS_PER_WORD
 
-  def apply(v: Traversable[Int]): BitVector = {
+  def apply(v: Iterable[Int]): BitVector = {
     val bvb = new util.BitSet()
     for (b <- v) {
       bvb.set(b)
@@ -53,11 +53,17 @@ object BitVector {
   }
 }
 
-trait BitVector extends SortedSet[Int] with SortedSetLike[Int, BitVector] {
+trait BitVector extends AbstractSet[Int]
+  with SortedSet[Int]
+  with SortedSetOps[Int, SortedSet, BitVector]
+  with StrictOptimizedSortedSetOps[Int, SortedSet, BitVector] {
 
   //  def traversable: Traversable[Int] = new Traversable[Int] {
   //    def foreach[U](f: Int => U): Unit = BitVector.this.foreach(f)
   //  }
+
+  override protected def fromSpecific(coll: IterableOnce[Int]): BitVector = ???
+  override protected def newSpecificBuilder: mutable.Builder[Int, BitVector] = ???
 
   override def empty: BitVector = BitVector.empty
 
@@ -83,9 +89,9 @@ trait BitVector extends SortedSet[Int] with SortedSetLike[Int, BitVector] {
 
   def words: Array[Long]
 
-  def -(position: Int): BitVector
+  def excl(position: Int): BitVector
 
-  def +(position: Int): BitVector = {
+  def incl(position: Int): BitVector = {
     val wordPos = word(position)
     val oldWord = getWord(wordPos)
     val newWord = oldWord | (1L << position)
@@ -97,7 +103,7 @@ trait BitVector extends SortedSet[Int] with SortedSetLike[Int, BitVector] {
     }
   }
 
-  def ++(p: Traversable[Int]): BitVector = {
+  def ++(p: Iterable[Int]): BitVector = {
     val bvb = util.BitSet.valueOf(words)
 
     for (i <- p) {
@@ -111,7 +117,7 @@ trait BitVector extends SortedSet[Int] with SortedSetLike[Int, BitVector] {
     }
   }
 
-  def --(p: Traversable[Int]): BitVector = p.foldLeft(this)(_ - _)
+  // def --(p: Iterable[Int]): BitVector = p.foldLeft(this)(_ - _)
 
   // def apply(position: Int): Boolean
 
@@ -127,7 +133,7 @@ trait BitVector extends SortedSet[Int] with SortedSetLike[Int, BitVector] {
 
   def intersects(bV: BitVector, position: Int): Boolean
 
-  def intersects(bV: BitVector): Int;
+  def intersects(bV: BitVector): Int
 
   def nbWords: Int
 
@@ -149,7 +155,7 @@ trait BitVector extends SortedSet[Int] with SortedSetLike[Int, BitVector] {
 
   def setWordShrink(pos: Int, word: Long): BitVector
 
-  override def filter(f: Int => Boolean): BitVector
+  // override def filter(f: Int => Boolean): BitVector
 
   def filterBounds(f: Int => Boolean): BitVector
 
@@ -223,9 +229,9 @@ trait BitVector extends SortedSet[Int] with SortedSetLike[Int, BitVector] {
   override def toString: String =
     this.getClass.getSimpleName + iterator.mkString("{", ", ", "}")
 
-  def iterator: Iterator[Int] = keysIteratorFrom(0)
+  def iterator: Iterator[Int] = iteratorFrom(0)
 
-  def keysIteratorFrom(start: Int): Iterator[Int] = new Iterator[Int] {
+  def iteratorFrom(start: Int): Iterator[Int] = new Iterator[Int] {
     private var current = nextSetBit(start)
 
     def hasNext: Boolean = current >= 0

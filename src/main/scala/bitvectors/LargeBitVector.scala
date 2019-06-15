@@ -17,7 +17,7 @@ class LargeBitVector private[bitvectors](val words: Array[Long]) extends BitVect
 
   //  assert(words.length > 1)
   //  assert(words(words.length - 1) != 0)
-  def -(position: Int): BitVector = {
+  def excl(position: Int): BitVector = {
     val wordPos: Int = word(position)
     val oldWord = getWord(wordPos)
     val newWord = oldWord & ~(1L << position)
@@ -233,12 +233,7 @@ class LargeBitVector private[bitvectors](val words: Array[Long]) extends BitVect
   }
 
   def subsetOf(bv: BitVector): Boolean = {
-    for (i <- words.indices) {
-      if ((words(i) & ~bv.getWord(i)) != 0L) {
-        return false
-      }
-    }
-    true
+    words.indices.forall(i => (words(i) & ~bv.getWord(i)) == 0L)
   }
 
   def setWordExpand(pos: Int, word: Long): BitVector = {

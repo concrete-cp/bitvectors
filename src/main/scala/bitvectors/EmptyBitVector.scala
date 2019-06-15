@@ -3,7 +3,7 @@ package bitvectors
 object EmptyBitVector extends BitVector {
   def &(bv: BitVector): BitVector = this
   def |(bv: BitVector): BitVector = bv
-  def -(position: Int): BitVector = this
+  def excl(position: Int): BitVector = this
   def ^(bv: BitVector): BitVector = bv
   def contains(position: Int): Boolean = false
   def cardinality: Int = 0
